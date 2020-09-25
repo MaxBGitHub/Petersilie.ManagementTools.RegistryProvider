@@ -43,6 +43,14 @@ namespace Petersilie.ManagementTools.RegistryProvider
 		** is always returned. The method returns an empty string ("") if the 
 		** data is empty. */
 		const string METHOD_ENUMVALUES = "EnumValues";
+		/* The CheckAccess method verifies that the user has the specified permissions.
+		** Returns zero (0) on success and a non-zero error code whose message can
+		** be retrieved by using the FormatMessage WinApi function. */
+		const string METHOD_CHECKACCESS = "CheckAccess";
+
+		const string METHOD_CREATEKEY = "CreateKey";
+
+		const string METHOD_DELETEKEY = "DeleteKey";
 
 		#endregion
 
@@ -88,6 +96,35 @@ namespace Petersilie.ManagementTools.RegistryProvider
 		const string PROP_SVALUE = "sValue";
 		/* A DWORD data value for the named value. */
 		const string PROP_UVALUE = "uValue";
+		/* A parameter that specifies the access permissions to be verified
+		** by the CheckAccess method. You can add the KEY_* constant values
+		** together to verify more than one access permission. The default
+		** value is KEY_DEFAULT (3), and combination of 
+		** KEY_QUERY_VALUE(1) and KEY_SET_VALUE (2). */
+		const string PROP_UREQUIRED = "uRequired";
+		/* If TRUE, the user has the specified access permissions.
+		** This property is only used by the CheckAccess method
+		** and is the OUT parameter. */
+		const string PROP_BGRANTED = "bGranted";
+
+		#endregion
+
+
+		#region SET_* constants
+
+		const string SET_BINARY = "SetBinaryValue";
+
+		const string SET_DWORD = "SetDWORDValue";
+
+		const string SET_QWORD = "SetQWORDValue";
+
+		const string SET_EXPAND_SZ = "SetExpandedStringValue";
+
+		const string SET_MULTI_SZ = "SetMultiStringValue";
+
+		const string SET_SECURE_DESC = "SetSecurityDescriptor";
+
+		const string SET_SZ = "SetStringValue";
 
 		#endregion
 
@@ -121,6 +158,48 @@ namespace Petersilie.ManagementTools.RegistryProvider
 		/* The GetBinaryValue method returns the data value for a named value 
 		** whose data type is REG_BINARY. */
 		const string GET_BINARY	= "GetBinaryValue";
+
+		const string GET_SECURITYDESCRIPTOR = "GetSecurityDescriptor";
+
+		#endregion
+
+
+		#region KEY_* constants 
+
+		/* =======================================================================
+		**							KEY_* CONSTANTS
+		** =======================================================================
+		** The KEY_* constants are used for the StdRegProv method CheckAccess.
+		** Use a single value or combine them with a binary-operator.
+		** Default value is KEY_DEFAULT (3).
+		** Used for the parameter uRequired and only for that.
+		**
+		*/
+		/* Required to query the values of a registry key. */
+		const UInt32 KEY_QUERY_VALUE = 0x00001;
+		/* Required to create, delete, or set a registry value. */
+		const UInt32 KEY_SET_VALUE = 0x00002;
+		/* Default value, allows querying, creating, deleting, 
+		** or setting a registry value. */
+		const UInt32 KEY_DEFAULT = (KEY_QUERY_VALUE | KEY_SET_VALUE);
+		/* Required to create a subkey of a registry key. */
+		const UInt32 KEY_CREATE_SUB_KEY	= 0x00004;
+		/* Required to enumerate the subkeys of a registry key. */
+		const UInt32 KEY_ENUMERATE_SUB_KEYS = 0x00008;
+		/* Required to request change notifications for a 
+		** registry key or for subkeys of a registry key. */
+		const UInt32 KEY_NOTIFY = 0x00010;
+		/* Required to create a registry key. */
+		const UInt32 KEY_CREATE = 0x00020;
+		/* Required to delete a registry key. */
+		const UInt32 KEY_DELETE = 0x10000;
+		/* Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, 
+		** KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values. */
+		const UInt32 KEY_READ_CONTROL = 0x20000;
+		/* Required to modify the DACL in the object's security descriptor. */
+		const UInt32 KEY_WRITE_DAC = 0x40000;
+		/* Required to change the owner in the object's security descriptor. */
+		const UInt32 KEY_WRITE_OWNER = 0x80000;
 
 		#endregion
 
@@ -342,6 +421,41 @@ namespace Petersilie.ManagementTools.RegistryProvider
 			lpMsgBuf = LocalFree(lpMsgBuf);
 
 			return retVal;
+		}
+
+		#endregion
+
+
+		#region Permission retrieval
+
+		public int GetPermission(RegHive hive, string keyPath, 
+			UInt32 permissionFlags, out bool granted)
+		{
+			// Define input parameters for CheckAccess method.
+			var inParams = _mgmt.GetMethodParameters(METHOD_CHECKACCESS);
+			inParams[PROP_HDEFKEY]		= hive;
+			inParams[PROP_SSUBKEYNAME]	= keyPath;
+			inParams[PROP_UREQUIRED]	= permissionFlags;
+
+			// Invoke the CheckAccess method with the input parameters.
+			var outParams = _mgmt.InvokeMethod(
+				METHOD_CHECKACCESS, // CheckAccess method.
+				inParams,			// CheckAccess parameters.
+				Architecture);      // x64 or x86 specific architecture.
+
+			UInt32 retVal;
+			string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";			
+			if (UInt32.TryParse(sResult, out retVal)) {
+				if ( 0 != retVal ) {
+					string errMsg = GetErrorMessage((int)retVal);
+					throw new Win32Exception(errMsg);
+				}
+			}
+
+			string sGranted = outParams[PROP_BGRANTED].ToString();
+			bool.TryParse(sGranted, out granted);
+
+			return (int)retVal;
 		}
 
 		#endregion
@@ -717,6 +831,74 @@ namespace Petersilie.ManagementTools.RegistryProvider
 		}
 
 
+		/// <summary>
+		/// Gets all property names and values of the specified registry key
+		/// </summary>
+		/// <param name="hive">The registry tree, also known as hive</param>
+		/// <param name="keyPath">Registry key path</param>
+		/// <returns></returns>
+		public IEnumerable<KeyValuePair<string, object>> GetProperties(
+			RegHive hive, string keyPath)
+		{
+			Dictionary<string, RegType> typeMap;
+						// Get data type of all properties.
+			var retVal = GetRegTypes(hive, keyPath, out typeMap);
+			if ( 0 != retVal ) {
+				string errMsg = GetErrorMessage(retVal);
+				throw new Win32Exception(errMsg);
+			}
+
+			foreach (var key in typeMap.Keys) {
+				// Convert reg property value to C# data type.
+				yield return GetProperty(hive, typeMap[key], keyPath, key);
+			}
+		}
+
+
+		/* Get the value of the named property. */
+		private KeyValuePair<string, object> GetProperty(RegHive hive, 
+			RegType regType, string keyPath, string property)
+		{
+			ManagementBaseObject inParams = null;
+			ManagementBaseObject outParams = null;
+
+			string method;
+			string valProp;
+			if (!GetMappedMethodAndProperty(regType, out method, out valProp)) {
+				return default(KeyValuePair<string, object>);
+			}
+
+			// Define input parameters for the Get method.
+			inParams = _mgmt.GetMethodParameters(method);
+			inParams[PROP_HDEFKEY] = hive;          // Registry hive of key.
+			inParams[PROP_SSUBKEYNAME] = keyPath;       // Registry key.
+			inParams[PROP_SVALUENAME] = property;       // Value property.
+
+			// Invoke the Get method with the input parameters.
+			outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
+			var retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
+			// Check for errors.
+			if (retVal != 0) {
+				inParams.Dispose();
+				outParams.Dispose();
+				// Get message and throw.
+				string errMsg = GetErrorMessage(retVal);
+				throw new Win32Exception(retVal, errMsg);
+			}
+
+			// Translate native value to C# data type.
+			object value = TranslateValue(outParams, method, valProp);
+			// Store property name and value in KeyValuePair.
+			KeyValuePair<string, object> propertyValue = 
+				new KeyValuePair<string, object>(property, value);
+
+			inParams.Dispose();
+			outParams.Dispose();
+
+			return propertyValue;
+		}
+
+
 		/* Get the value of the named property. */
 		private object GetValue(RegHive hive, RegType regType, 
 			string keyPath, string property)
@@ -813,6 +995,68 @@ namespace Petersilie.ManagementTools.RegistryProvider
 			outParams.Dispose();
 
 			return value;
+		}
+
+
+		/// <summary>
+		/// Gets the property name and value of the specified 
+		/// registry key value/property
+		/// </summary>
+		/// <param name="hive">The registry tree, also known as hive, 
+		/// that contains the parent key path</param>
+		/// <param name="keyPath">Registry key path</param>
+		/// <param name="value">Value name / Property name</param>
+		/// <returns></returns>
+		/// <exception cref="Win32Exception"></exception>
+		public KeyValuePair<string, object> GetProperty(RegHive hive, string keyPath, string property)
+		{
+			RegType type;
+			// Get the data type of the registry value
+			var retVal = GetRegType(hive, keyPath, property, out type);
+			if (0 != retVal) {
+				string errMsg = GetErrorMessage(retVal);
+				throw new Win32Exception(errMsg);
+			}
+
+			if (RegType.UNKOWN == type) {
+				return default(KeyValuePair<string, object>);
+			}
+
+			ManagementBaseObject inParams = null;
+			ManagementBaseObject outParams = null;
+
+			string method;
+			string valProp;
+			if (!GetMappedMethodAndProperty(type, out method, out valProp)) {
+				return default(KeyValuePair<string, object>);
+			}
+
+			// Define input parameters for the Get method.
+			inParams = _mgmt.GetMethodParameters(method);
+			inParams[PROP_HDEFKEY]		= hive;     // Registry hive of key.
+			inParams[PROP_SSUBKEYNAME]	= keyPath;  // Registry key.
+			inParams[PROP_SVALUENAME]	= property; // Value property.
+
+			// Invoke the Get method with the input parameters.
+			outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
+			retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
+			// Check for errors.
+			if (retVal != 0) {
+				inParams.Dispose();
+				outParams.Dispose();
+				// Get message and throw.
+				string errMsg = GetErrorMessage(retVal);
+				throw new Win32Exception(retVal, errMsg);
+			}
+
+			object value = TranslateValue(outParams, method, valProp);
+			KeyValuePair<string, object> propertyValue =
+				new KeyValuePair<string, object>(valProp, value);
+
+			inParams.Dispose();
+			outParams.Dispose();
+
+			return propertyValue;
 		}
 
 		#endregion
