@@ -7,15 +7,19 @@ using System.Runtime.InteropServices;
 
 namespace Petersilie.ManagementTools.RegistryProvider
 {
-	static class Program
-	{
-		public static void Main()
-		{
-			bool granted;
-			var reg64 = new Registry64();
-			reg64.GetPermission(RegHive.HKEY_LOCAL_MACHINE,
-				@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-				3, out granted);
-		}
-	}
+    static class Program
+    {
+        public static void Main()
+        {
+            bool granted;
+            var reg64 = new Registry64();
+            int retVal = reg64.HasPermission(
+                RegHive.HKEY_LOCAL_MACHINE,
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                RegAccessFlags.Delete, 
+                out granted);
+
+            System.Diagnostics.Debug.WriteLine(retVal + " - " + granted);
+        }
+    }
 }

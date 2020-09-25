@@ -7,117 +7,117 @@ using System.Threading.Tasks;
 
 namespace Petersilie.ManagementTools.RegistryProvider
 {
-	internal class TreeNode<T> : IEnumerable<TreeNode<T>>
-	{
-		public T Data								{ get; set; }
-		public TreeNode<T> Parent					{ get; set; }
-		public ICollection<TreeNode<T>> Children	{ get; set; }
+    internal class TreeNode<T> : IEnumerable<TreeNode<T>>
+    {
+        public T Data                                { get; set; }
+        public TreeNode<T> Parent                    { get; set; }
+        public ICollection<TreeNode<T>> Children    { get; set; }
 
-		private ICollection<TreeNode<T>> _searchElements 
-			= new LinkedList<TreeNode<T>>();
-
-
-		public bool IsRoot
-		{
-			get {
-				return Parent == null;
-			}
-		}
+        private ICollection<TreeNode<T>> _searchElements 
+            = new LinkedList<TreeNode<T>>();
 
 
-		public bool IsLeaf
-		{
-			get {
-				return Children.Count == 0;
-			}
-		}
+        public bool IsRoot
+        {
+            get {
+                return Parent == null;
+            }
+        }
 
 
-		public int Level
-		{
-			get
-			{
-				if (IsRoot) {
-					return 0;
-				}
-				else {
-					return Parent.Level + 1;
-				}				
-			}
-		}
+        public bool IsLeaf
+        {
+            get {
+                return Children.Count == 0;
+            }
+        }
 
 
-		public TreeNode<T> Find(Func<TreeNode<T>, bool> predicate)
-		{
-			return _searchElements.FirstOrDefault(predicate);
-		}
+        public int Level
+        {
+            get
+            {
+                if (IsRoot) {
+                    return 0;
+                }
+                else {
+                    return Parent.Level + 1;
+                }                
+            }
+        }
 
 
-		private void RegisterSearchElem(TreeNode<T> elem)
-		{
-			_searchElements.Add(elem);
-			if (Parent != null) {
-				Parent.RegisterSearchElem(elem);
-			}
-		}
+        public TreeNode<T> Find(Func<TreeNode<T>, bool> predicate)
+        {
+            return _searchElements.FirstOrDefault(predicate);
+        }
 
 
-		public TreeNode<T> AddChild(T child)
-		{
-			TreeNode<T> childNode = new TreeNode<T>(child);
-			childNode.Parent = this;
-
-			Children.Add(childNode);
-
-			RegisterSearchElem(childNode);
-
-			return childNode;
-		}
+        private void RegisterSearchElem(TreeNode<T> elem)
+        {
+            _searchElements.Add(elem);
+            if (Parent != null) {
+                Parent.RegisterSearchElem(elem);
+            }
+        }
 
 
-		public void AddChild(TreeNode<T> child)
-		{
-			child.Parent = this;
+        public TreeNode<T> AddChild(T child)
+        {
+            TreeNode<T> childNode = new TreeNode<T>(child);
+            childNode.Parent = this;
 
-			Children.Add(child);
+            Children.Add(childNode);
 
-			RegisterSearchElem(child);
-		}
+            RegisterSearchElem(childNode);
 
-
-		public override string ToString()
-		{
-			return Data != null 
-				? Data.ToString() 
-				: string.Empty;
-		}
+            return childNode;
+        }
 
 
-		public IEnumerator<TreeNode<T>> GetEnumerator()
-		{
-			yield return this;
-			foreach (var child in Children) {
-				foreach (var grandChildren in child.Children) {
-					yield return grandChildren;
-				}
-			}
-		}
+        public void AddChild(TreeNode<T> child)
+        {
+            child.Parent = this;
+
+            Children.Add(child);
+
+            RegisterSearchElem(child);
+        }
 
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+        public override string ToString()
+        {
+            return Data != null 
+                ? Data.ToString() 
+                : string.Empty;
+        }
 
 
-		public TreeNode(T data)
-		{
-			Data = data;
-			Children = new LinkedList<TreeNode<T>>();
+        public IEnumerator<TreeNode<T>> GetEnumerator()
+        {
+            yield return this;
+            foreach (var child in Children) {
+                foreach (var grandChildren in child.Children) {
+                    yield return grandChildren;
+                }
+            }
+        }
 
-			_searchElements.Add(this);
-		}
 
-		
-	}
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+
+        public TreeNode(T data)
+        {
+            Data = data;
+            Children = new LinkedList<TreeNode<T>>();
+
+            _searchElements.Add(this);
+        }
+
+        
+    }
 }

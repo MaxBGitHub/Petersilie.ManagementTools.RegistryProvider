@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Petersilie.ManagementTools.RegistryProvider
 {
-	public class RegistryTree
-	{
-		public RegHive Hive { get; }
-		
-		public RegistryTree(RegHive hive, string rootKey)
-		{
+    public class RegistryTree
+    {
+        public RegHive Hive { get; }
+        
+        public RegistryTree(RegHive hive, string rootKey)
+        {
 
-		}
-	}
+        }
+    }
 }
