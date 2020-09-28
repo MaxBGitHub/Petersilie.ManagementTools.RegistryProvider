@@ -11,15 +11,11 @@ namespace Petersilie.ManagementTools.RegistryProvider
     {
         public static void Main()
         {
-            bool granted;
             var reg64 = new Registry64();
-            int retVal = reg64.HasPermission(
-                RegHive.HKEY_LOCAL_MACHINE,
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-                RegAccessFlags.Delete, 
-                out granted);
+            bool retVal;
 
-            System.Diagnostics.Debug.WriteLine(retVal + " - " + granted);
+            retVal = reg64.CreateKey(RegHive.HKEY_CURRENT_USER, "Test\\TestSubKey");
+            retVal = reg64.DeleteKey(RegHive.HKEY_CURRENT_USER, "Test\\TestSubKey");
         }
     }
 }

@@ -66,6 +66,7 @@
     <Compile Include="Registry32.cs" />
     <Compile Include="Registry64.cs" />
     <Compile Include="RegistryBase.cs" />
+    <Compile Include="RegistryException.cs" />
     <Compile Include="RegistryTree.cs" />
     <Compile Include="TreeNode.cs" />
   </ItemGroup>

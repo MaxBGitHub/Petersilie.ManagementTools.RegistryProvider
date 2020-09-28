@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Specialized;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Management;
@@ -53,6 +54,8 @@ namespace Petersilie.ManagementTools.RegistryProvider
         const string METHOD_CREATEKEY = "CreateKey";
 
         const string METHOD_DELETEKEY = "DeleteKey";
+
+        const string METHOD_DELETEVALUE = "DeleteValue";
 
         #endregion
 
@@ -402,6 +405,10 @@ namespace Petersilie.ManagementTools.RegistryProvider
         ** property when accessing registry keys. */
         private string GetErrorMessage(int nLastError)
         {
+            if (nLastError == -1) {
+                return "Unexpected error occured";
+            }
+
             // Buffer in which we store the message
             IntPtr lpMsgBuf = IntPtr.Zero;
             // Get formatted message.
@@ -441,10 +448,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// <param name="granted">TRUE if the permissions are granted</param>
         /// <returns>A value that is zero (0) if successfull.</returns>
         /// <exception cref="Win32Exception"></exception>
-        /// <exception cref="UnauthorizedAccessException">
-        /// Thrown when the current
-        /// user does not have permissions to execute the 
-        /// permission query on the key.</exception>
+        /// <exception cref="UnexpectedRegistryException"></exception>
         public int HasPermission(RegHive hive, string keyPath, 
             RegAccessFlags permissionFlags, out bool granted)
         {
@@ -468,14 +472,22 @@ namespace Petersilie.ManagementTools.RegistryProvider
                 if ( 0 != retVal ) {
                     string errMsg = GetErrorMessage(retVal);
                     // Access denied. 
-                    /* === TODO ===
-                    ** Don't throw exception.
-                    ** Just set [out] bool granted to false. */
-                    if ( 5 == retVal ) {                        
-                        throw new UnauthorizedAccessException(errMsg);
+                    if ( 5 == retVal ) {
+                        granted = false;
+                        return retVal;
+                        //throw new UnauthorizedAccessException(errMsg);
                     }                    
                     throw new Win32Exception(errMsg);
                 }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_CHECKACCESS, 
+                    errMsg, new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString()             },
+                        { PROP_SSUBKEYNAME, keyPath                     },
+                        { PROP_UREQUIRED,   permissionFlags.ToString()  }
+                    });
             }
 
             string sGranted = outParams[PROP_BGRANTED].ToString();
@@ -497,6 +509,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// <param name="newKeyPath">The key and subkeys to be created</param>
         /// <returns>Returns TRUE if alls keys where created</returns>
         /// <exception cref="Win32Exception"></exception>
+        /// <exception cref="UnexpectedRegistryException"></exception>
         public bool CreateKey(RegHive hive, string newKeyPath)
         {
             // Define input parameters for CreateKey method.
@@ -512,12 +525,19 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
             int retVal;
             string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
-            if (int.TryParse(sResult, out retVal))
-            {
-                if ( 0 != retVal ) {
+            if (int.TryParse(sResult, out retVal)) {
+                if (0 != retVal) {
                     string errMsg = GetErrorMessage(retVal);
                     throw new Win32Exception(errMsg);
                 }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_CREATEKEY, 
+                    errMsg, new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, newKeyPath      },
+                    });
             }
             return true;
         }
@@ -536,6 +556,8 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// <param name="fullPath">TRUE if the function should append the sub 
         /// key name to the parent key</param>
         /// <returns></returns>
+        /// <exception cref="Win32Exception"></exception>
+        /// <exception cref="UnexpectedRegistryException"></exception>
         public string[] GetSubKeys(RegHive hive, string keyPath, bool fullPath)
         {
             // Define input parameters for EnumKey method.
@@ -548,6 +570,23 @@ namespace Petersilie.ManagementTools.RegistryProvider
                 METHOD_ENUMKEY, // EnumKey method.
                 inParams,       // EnumKey parameters.
                 Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_ENUMKEY, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         }
+                    });
+            }
 
             // Convert native array to C# string array.                
             string[] keys = ObjectConverter.ToStringArray(
@@ -571,6 +610,8 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// that contains the parent key path</param>
         /// <param name="keyPath">Registry key path</param>
         /// <returns></returns>
+        /// <exception cref="Win32Exception"></exception>
+        /// <exception cref="UnexpectedRegistryException"></exception>
         public string[] GetSubKeys(RegHive hive, string keyPath)
         {
             // Define input parameters for EnumKey method.
@@ -584,12 +625,72 @@ namespace Petersilie.ManagementTools.RegistryProvider
                 inParams,       // EnumKey parameters.
                 Architecture);  // x64 or x86 specific architecture.
 
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_ENUMKEY, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         }
+                    });
+            }
+
             // Convert native array to C# string array.
             string[] keys = ObjectConverter.ToStringArray(
                 outParams, 
                 PROP_SNAMES);
 
             return keys;
+        }
+
+        #endregion
+
+
+        #region Registry Key deletion
+
+        /// <summary>
+        /// Deletes the specified registry key.
+        /// </summary>
+        /// <param name="hive">The registry tree, also knwon as hive.</param>
+        /// <param name="keyPath"></param>
+        /// <returns></returns>
+        public bool DeleteKey(RegHive hive, string keyPath)
+        {
+            // Define input parameters for DeleteKey method.
+            var inParams = _mgmt.GetMethodParameters(METHOD_DELETEKEY);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+
+            // Invoke the DeleteKey method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                METHOD_DELETEKEY,   // DeleteKey method.
+                inParams,           // DeleteKey parameters.
+                Architecture);      // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if (0 != retVal) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_DELETEKEY, 
+                    errMsg, new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         }
+                    });
+            }
+            return true;
         }
 
         #endregion
@@ -627,8 +728,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
                 // Get return value of EnumValues method.
                 string sResult = outParams[PROP_RETURNVALUE]?.ToString();
                 // Parse return value to int.
-                if (int.TryParse((sResult ?? "-1"), out retVal))
-                {
+                if (int.TryParse((sResult ?? "-1"), out retVal)) {
                     // Check if type conversion was successfull.
                     retVal = retVal == -1 
                         ? Marshal.GetLastWin32Error() // Value was null.
@@ -833,7 +933,142 @@ namespace Petersilie.ManagementTools.RegistryProvider
         #endregion
 
 
+        #region Value creation       
+
+        /// <summary>
+        /// Sets the data value for a named value whose data type is REG_BINARY.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="Win32Exception"></exception>
+        public int SetBinaryValue(RegHive hive, string keyPath, 
+            string propertyName, byte[] value)
+        {
+            if (value == null) {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            // Define input parameters for SetBinaryValue method.
+            var inParams = _mgmt.GetMethodParameters(SET_BINARY);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_UVALUE]       = value;
+
+            // Invoke the SetBinaryValue method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_BINARY,     // SetBinaryValue method.
+                inParams,       // SetBinaryValue parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_BINARY, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_UVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hive"></param>
+        /// <param name="keyPath"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public int SetDwordValue(RegHive hive, string keyPath, 
+            string propertyName, UInt32 value)
+        {
+            // Define input parameters for SetDWORDValue method.
+            var inParams = _mgmt.GetMethodParameters(SET_BINARY);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_UVALUE]       = value;
+
+            // Invoke the SetDWORDValue method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_BINARY,     // SetBinaryValue method.
+                inParams,       // SetBinaryValue parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_BINARY, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_UVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+        #endregion
+
+
         #region Value retrieval
+
+        /// <summary>
+        /// Checks if the named property exists.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key that contains the property.</param>
+        /// <param name="property">The named property to check.</param>
+        /// <param name="matchCase">TRUE if the property name 
+        /// check should be case sensitive</param>
+        /// <returns>Returns TRUE if the named property exists.</returns>
+        /// <exception cref="Win32Exception"></exception>
+        public bool PropertyExists(RegHive hive, string keyPath, string property,
+            bool matchCase = false)
+        {
+            Dictionary<string, RegType> properties;
+            int retVal = GetRegTypes(hive, keyPath, out properties);
+
+            if ( 0 != retVal )  {
+                string errMsg = GetErrorMessage(retVal);
+                throw new Win32Exception(errMsg);
+            }
+
+            if (matchCase) {
+                return properties.ContainsKey(property);
+            }
+            else
+            {
+                property = property.ToLower();
+                foreach (var propEntry in properties) {
+                    if (propEntry.Key.ToLower() == property) {
+                        return true;
+                    }
+                }
+                return false;
+            }            
+        }
+
 
         /// <summary>
         /// Gets all values of the specified registry key
@@ -1135,6 +1370,55 @@ namespace Petersilie.ManagementTools.RegistryProvider
             outParams.Dispose();
 
             return propertyValue;
+        }
+
+        #endregion
+
+
+        #region Value deletion
+
+        /// <summary>
+        /// Deletes the specified registry key property value.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="parentKeyPath">Registry key path that contains 
+        /// the property which value gets deleted</param>
+        /// <param name="propertyName">Name of the property that contains 
+        /// the value to delete</param>
+        /// <returns></returns>
+        /// <exception cref="Win32Exception"></exception>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        public bool DeleteValue(RegHive hive, string parentKeyPath, 
+            string propertyName)
+        {
+            // Define input parameters for DeleteValue method.
+            var inParams = _mgmt.GetMethodParameters(METHOD_DELETEVALUE);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = parentKeyPath;
+
+            // Invoke the CreateKey method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                METHOD_DELETEVALUE, // DeleteValue method.
+                inParams,           // DeleteValue parameters.
+                Architecture);      // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if (0 != retVal) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, METHOD_DELETEVALUE, 
+                    errMsg, new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, parentKeyPath   }
+                    });
+            }
+            return true;
         }
 
         #endregion
