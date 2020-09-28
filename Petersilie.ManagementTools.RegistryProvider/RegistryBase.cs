@@ -956,6 +956,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
             var inParams = _mgmt.GetMethodParameters(SET_BINARY);
             inParams[PROP_HDEFKEY]      = hive;
             inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
             inParams[PROP_UVALUE]       = value;
 
             // Invoke the SetBinaryValue method with the input parameters.
@@ -978,6 +979,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
                     new NameValueCollection {
                         { PROP_HDEFKEY,     hive.ToString() },
                         { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
                         { PROP_UVALUE,      nameof(value)   },
                     });
             }
@@ -986,26 +988,29 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// 
+        /// Sets the data value for a named value whose data type is REG_DWORD.
         /// </summary>
-        /// <param name="hive"></param>
-        /// <param name="keyPath"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        /// <exception cref="Win32Exception"></exception>
         public int SetDwordValue(RegHive hive, string keyPath, 
             string propertyName, UInt32 value)
         {
             // Define input parameters for SetDWORDValue method.
-            var inParams = _mgmt.GetMethodParameters(SET_BINARY);
+            var inParams = _mgmt.GetMethodParameters(SET_DWORD);
             inParams[PROP_HDEFKEY]      = hive;
             inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
             inParams[PROP_UVALUE]       = value;
 
             // Invoke the SetDWORDValue method with the input parameters.
             var outParams = _mgmt.InvokeMethod(
-                SET_BINARY,     // SetBinaryValue method.
-                inParams,       // SetBinaryValue parameters.
+                SET_DWORD,      // SetDWORDValue method.
+                inParams,       // SetDWORDValue parameters.
                 Architecture);  // x64 or x86 specific architecture.
 
             int retVal;
@@ -1018,11 +1023,207 @@ namespace Petersilie.ManagementTools.RegistryProvider
             }
             else {
                 string errMsg = GetErrorMessage(-1);
-                throw new UnexpectedRegistryException(-1, SET_BINARY, errMsg,
+                throw new UnexpectedRegistryException(-1, SET_DWORD, errMsg,
                     new NameValueCollection {
                         { PROP_HDEFKEY,     hive.ToString() },
                         { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
                         { PROP_UVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+
+        /// <summary>
+        /// Sets the data value for a named value whose data type is REG_QWORD.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        /// <exception cref="Win32Exception"></exception>
+        public int SetQwordValue(RegHive hive, string keyPath, 
+            string propertyName, UInt64 value)
+        {
+            // Define input parameters for SetQWORDValue method.
+            var inParams = _mgmt.GetMethodParameters(SET_QWORD);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
+            inParams[PROP_UVALUE]       = value;
+
+            // Invoke the SetQWORDValue method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_QWORD,      // SetQWORDValue method.
+                inParams,       // SetQWORDValue parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_QWORD, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
+                        { PROP_UVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+
+        /// <summary>
+        /// Sets the data value for a named value whose 
+        /// data type is REG_EXPAND_SZ.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        /// <exception cref="Win32Exception"></exception>
+        public int SetExpandedStringValue(RegHive hive, string keyPath, 
+            string propertyName, string value)
+        {
+            // Define input parameters for SetExpandedString method.
+            var inParams = _mgmt.GetMethodParameters(SET_EXPAND_SZ);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
+            inParams[PROP_SVALUE]       = value;            
+
+            // Invoke the SetExpandedString method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_EXPAND_SZ,  // SetExpandedString method.
+                inParams,       // SetExpandedString parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_EXPAND_SZ, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
+                        { PROP_SVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+
+        /// <summary>
+        /// Sets the data value for a named value whose 
+        /// data type is REG_MULTI_SZ.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        /// <exception cref="Win32Exception"></exception>
+        public int SetMultiStringValue(RegHive hive, string keyPath, 
+            string propertyName, string[] value)
+        {
+            // Define input parameters for SetMultiStringValue method.
+            var inParams = _mgmt.GetMethodParameters(SET_MULTI_SZ);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
+            inParams[PROP_SVALUE]       = value;
+
+            // Invoke the SetMultiStringValue method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_MULTI_SZ,   // SetMultiStringValue method.
+                inParams,       // SetMultiStringValue parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_MULTI_SZ, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
+                        { PROP_SVALUE,      nameof(value)   },
+                    });
+            }
+            return retVal;
+        }
+
+
+        /// <summary>
+        /// Sets the data value for a named value whose 
+        /// data type is REG_SZ.
+        /// </summary>
+        /// <param name="hive">Registry tree, also known as hive.</param>
+        /// <param name="keyPath">Registry key path.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">Value for the named property.</param>
+        /// <returns>Returns the result code on success.</returns>
+        /// <exception cref="UnexpectedRegistryException"></exception>
+        /// <exception cref="Win32Exception"></exception>
+        public int SetStringValue(RegHive hive, string keyPath, 
+            string propertyName, string value)
+        {
+            // Define input parameters for SetStringValue method.
+            var inParams = _mgmt.GetMethodParameters(SET_SZ);
+            inParams[PROP_HDEFKEY]      = hive;
+            inParams[PROP_SSUBKEYNAME]  = keyPath;
+            inParams[PROP_SVALUENAME]   = propertyName;
+            inParams[PROP_SVALUE]       = value;
+
+            // Invoke the SetStringValue method with the input parameters.
+            var outParams = _mgmt.InvokeMethod(
+                SET_SZ,         // SetStringValue method.
+                inParams,       // SetStringValue parameters.
+                Architecture);  // x64 or x86 specific architecture.
+
+            int retVal;
+            string sResult = outParams[PROP_RETURNVALUE]?.ToString() ?? "-1";
+            if (int.TryParse(sResult, out retVal)) {
+                if ( 0 != retVal ) {
+                    string errMsg = GetErrorMessage(retVal);
+                    throw new Win32Exception(errMsg);
+                }
+            }
+            else {
+                string errMsg = GetErrorMessage(-1);
+                throw new UnexpectedRegistryException(-1, SET_SZ, errMsg,
+                    new NameValueCollection {
+                        { PROP_HDEFKEY,     hive.ToString() },
+                        { PROP_SSUBKEYNAME, keyPath         },
+                        { PROP_SVALUENAME,  propertyName    },
+                        { PROP_SVALUE,      nameof(value)   },
                     });
             }
             return retVal;
