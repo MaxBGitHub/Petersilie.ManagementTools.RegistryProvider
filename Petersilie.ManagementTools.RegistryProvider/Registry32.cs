@@ -3,7 +3,7 @@
 namespace Petersilie.ManagementTools.RegistryProvider
 {
     /// <summary>
-    /// 32-bit implementation of the <see cref="RegistryBase"/>
+    /// Provides the 32-bit view of a local or remote registry.
     /// </summary>
     public class Registry32 : RegistryBase
     {
@@ -19,11 +19,18 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Remote registry constructor with credentials.
+        /// Initializes a new instance of the <see cref="Registry32"/>
+        /// class which accesses the registry of the specified remote
+        /// computer with the specified user credentials. 
+        /// Some functions will fail if the specified user does not have
+        /// administrative priviliges.
         /// </summary>
-        /// <param name="machine">NetBIOS name of remote machine</param>
-        /// <param name="userName">Admin user name for authentication</param>
-        /// <param name="password">Password für authentication</param>
+        /// <param name="machine">The NetBIOS name of the 
+        /// remote computer</param>
+        /// <param name="userName">The user name of the user which 
+        /// will be impersionated</param>
+        /// <param name="password">The password of the user which 
+        /// will be impersionated</param>
         public Registry32(string machine, string userName, 
             SecureString password)
             : base(machine, userName, password)
@@ -32,9 +39,13 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Remote registry constructor.
+        /// Initializes a new instance of the <see cref="Registry32"/>
+        /// class which accesses the registry of the specified remote
+        /// computer. Some functions will fail if application is not run
+        /// with administrative priviliges.
         /// </summary>
-        /// <param name="machine">NetBIOS name of remote machine.</param>
+        /// <param name="machine">The NetBIOS name of 
+        /// the remote computer</param>
         public Registry32(string machine)
             : base(machine)
         {
@@ -42,7 +53,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Constructor for registry on local machine.
+        /// Constructor for the registry of the local computer
         /// </summary>
         public Registry32()
             : base()

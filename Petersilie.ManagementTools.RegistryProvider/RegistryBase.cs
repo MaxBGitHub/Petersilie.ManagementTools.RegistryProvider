@@ -50,11 +50,13 @@ namespace Petersilie.ManagementTools.RegistryProvider
         ** Returns zero (0) on success and a non-zero error code whose message 
         ** can be retrieved by using the FormatMessage WinApi function. */
         const string METHOD_CHECKACCESS = "CheckAccess";
-
+        /* The CreateKey method creates a subkey in the specified tree.
+        ** Creates all subkeys specified in the path that do not exist. */
         const string METHOD_CREATEKEY = "CreateKey";
-
+        /* The DeleteKey method deletes a subkey in the specified tree. */
         const string METHOD_DELETEKEY = "DeleteKey";
-
+        /* The DeleteValue method deletes a named value in the 
+        ** specified subkey. */
         const string METHOD_DELETEVALUE = "DeleteValue";
 
         #endregion
@@ -117,19 +119,34 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
         #region SET_* constants
 
+        /* ====================================================================
+        **                            SET_* CONSTANTS
+        ** ====================================================================
+        **  The SET_* constants are used to set named values within a specified
+        **  registry tree.
+        **
+        */
+        /* The SetBinaryValue method sets the data value for a named value
+        ** whose data type is REG_BINARY. */
         const string SET_BINARY = "SetBinaryValue";
-
+        /* The SetDWORDValue method sets the data value for a named value
+        ** whose data type is REG_DWORD. */
         const string SET_DWORD = "SetDWORDValue";
-
+        /* The SetQWORDValue method sets the data value for a named value
+        ** whose data type is REG_QWORD. */
         const string SET_QWORD = "SetQWORDValue";
-
+        /* The SetExpandedStringValue method sets the data value for a named
+        ** value whose data type is REG_EXPAND_SZ. */
         const string SET_EXPAND_SZ = "SetExpandedStringValue";
-
+        /* The SetMultiStringValue method sets the data value for a named value
+        ** whose data type is REG_MULTI_SZ. */
         const string SET_MULTI_SZ = "SetMultiStringValue";
-
-        const string SET_SECURE_DESC = "SetSecurityDescriptor";
-
+        /* The SetBinaryValue method sets the data value for a named value
+        ** whose data type is REG_BINARY. */
         const string SET_SZ = "SetStringValue";
+        ///* The SetSecurityDescriptor method sets the data value for a named
+        //** value whose data type is REG_BINARY. */
+        //const string SET_SECURE_DESC = "SetSecurityDescriptor";        
 
         #endregion
 
@@ -164,7 +181,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
         ** whose data type is REG_BINARY. */
         const string GET_BINARY = "GetBinaryValue";
 
-        const string GET_SECURITYDESCRIPTOR = "GetSecurityDescriptor";
+        //const string GET_SECURITYDESCRIPTOR = "GetSecurityDescriptor";
 
         #endregion
 
@@ -1299,7 +1316,10 @@ namespace Petersilie.ManagementTools.RegistryProvider
             foreach (var key in typeMap.Keys)
             {
                 try {
-                    results[i] = GetValue(hive, typeMap[key], keyPath, key);
+                    results[i] = GetValueInternal(  hive, 
+                                                    typeMap[key], 
+                                                    keyPath, 
+                                                    key);
                 }
                 catch (Win32Exception) {
                     if ( !silentlyContinue ) {
@@ -1333,7 +1353,10 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
             foreach (var key in typeMap.Keys) {
                 // Convert reg property value to C# data type.
-                yield return GetValue(hive, typeMap[key], keyPath, key);
+                yield return GetValueInternal(  hive, 
+                                                typeMap[key], 
+                                                keyPath, 
+                                                key);
             }
         }
 
@@ -1357,13 +1380,16 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
             foreach (var key in typeMap.Keys) {
                 // Convert reg property value to C# data type.
-                yield return GetProperty(hive, typeMap[key], keyPath, key);
+                yield return GetPropertyInternal(   hive, 
+                                                    typeMap[key], 
+                                                    keyPath, 
+                                                    key);
             }
         }
 
 
         /* Get the value of the named property. */
-        private KeyValuePair<string, object> GetProperty(RegHive hive, 
+        private KeyValuePair<string, object> GetPropertyInternal(RegHive hive, 
             RegType regType, string keyPath, string property)
         {
             ManagementBaseObject inParams = null;
@@ -1388,7 +1414,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
             outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
             var retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
             // Check for errors.
-            if (retVal != 0) {
+            if ( 0 != retVal ) {
                 inParams.Dispose();
                 outParams.Dispose();
                 // Get message and throw.
@@ -1410,7 +1436,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /* Get the value of the named property. */
-        private object GetValue(RegHive hive, RegType regType, 
+        private object GetValueInternal(RegHive hive, RegType regType, 
             string keyPath, string property)
         {
             ManagementBaseObject inParams   = null;
@@ -1435,7 +1461,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
             outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
             var retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
             // Check for errors.
-            if (retVal != 0) {
+            if ( 0 != retVal ) {
                 inParams.Dispose();
                 outParams.Dispose();
                 // Get message and throw.
@@ -1494,7 +1520,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
             outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
             retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
             // Check for errors.
-            if (retVal != 0) {
+            if ( 0 != retVal ) {
                 inParams.Dispose();
                 outParams.Dispose();
                 // Get message and throw.
@@ -1555,7 +1581,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
             outParams = _mgmt.InvokeMethod(method, inParams, Architecture);
             retVal = ObjectConverter.ToInt32(outParams, PROP_RETURNVALUE);
             // Check for errors.
-            if (retVal != 0) {
+            if ( 0 != retVal ) {
                 inParams.Dispose();
                 outParams.Dispose();
                 // Get message and throw.

@@ -2,6 +2,9 @@
 
 namespace Petersilie.ManagementTools.RegistryProvider
 { 
+    /// <summary>
+    /// Provides the 64-bit view of a local or remote registry.
+    /// </summary>
     public class Registry64 : RegistryBase
     {
         /// <summary>
@@ -16,11 +19,18 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Remote registry constructor with credentials.
+        /// Initializes a new instance of the <see cref="Registry64"/>
+        /// class which accesses the registry of the specified remote
+        /// computer with the specified user credentials. 
+        /// Some functions will fail if the specified user does not have
+        /// administrative priviliges.
         /// </summary>
-        /// <param name="machine"></param>
-        /// <param name="userName"></param>
-        /// <param name="password"></param>
+        /// <param name="machine">The NetBIOS name of the 
+        /// remote computer</param>
+        /// <param name="userName">The user name of the user which 
+        /// will be impersionated</param>
+        /// <param name="password">The password of the user which 
+        /// will be impersionated</param>
         public Registry64(string machine, string userName, 
             SecureString password)
             : base(machine, userName, password)
@@ -29,9 +39,13 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Remote registry constructor.
+        /// Initializes a new instance of the <see cref="Registry64"/>
+        /// class which accesses the registry of the specified remote
+        /// computer. Some functions will fail if application is not run
+        /// with administrative priviliges.
         /// </summary>
-        /// <param name="machine"></param>
+        /// <param name="machine">The NetBIOS name of 
+        /// the remote computer</param>
         public Registry64(string machine)
             : base(machine)
         {
@@ -39,7 +53,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
 
 
         /// <summary>
-        /// Constructor for registry on local machine.
+        /// Constructor for the registry of the local computer
         /// </summary>
         public Registry64()
             : base()
