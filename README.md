@@ -39,7 +39,7 @@ The Registry64 class probably won't work on a 32-bit System.
 I did not test that though!
 
 **RegistryNode**
-Implementation of a tree data structure which allows you do load all keys of a specified hive or only a defined subset of keys within that hive.
+Implementation of a tree data structure which allows you to load all keys of a specified hive or only a defined subset of keys within that hive.
 
 
 ### Getting Registry keys
@@ -108,7 +108,8 @@ string newKey = "SOFTWARE\\MySoftwareKey";
 bool created = CreateKey(RegHive.HKEY_LOCAL_MACHINE, newKey);
 ```
 
-
+### RegistryBase overview
+![ClassDiagram1](https://user-images.githubusercontent.com/50140896/94928651-4d2fa000-04c4-11eb-9021-60fa1de71f47.png)
 
 
 
