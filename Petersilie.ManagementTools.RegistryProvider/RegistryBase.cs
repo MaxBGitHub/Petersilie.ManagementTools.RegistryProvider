@@ -1666,7 +1666,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// <summary>
         /// <see cref="ViewFlag"/> determines if the hive view is x64 or x86 
         /// </summary>
-        protected virtual RegView ViewFlag { get; }
+        internal protected virtual RegView ViewFlag { get; }
         
         /// <summary>
         /// Sets the architecture which should be accessed.

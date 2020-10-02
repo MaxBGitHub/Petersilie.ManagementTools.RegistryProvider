@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{87B85809-823D-41CD-BF23-A6D4262837B3}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Petersilie.ManagementTools.RegistryProvider</RootNamespace>
     <AssemblyName>Petersilie.ManagementTools.RegistryProvider</AssemblyName>
@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums.cs" />
+    <Compile Include="Main.cs" />
     <Compile Include="ManagementProvider.cs" />
     <Compile Include="ObjectConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -66,8 +67,7 @@
     <Compile Include="Registry64.cs" />
     <Compile Include="RegistryBase.cs" />
     <Compile Include="RegistryException.cs" />
-    <Compile Include="RegistryTree.cs" />
-    <Compile Include="TreeNode.cs" />
+    <Compile Include="RegistryNode.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">

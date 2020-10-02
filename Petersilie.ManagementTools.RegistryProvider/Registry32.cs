@@ -10,7 +10,7 @@ namespace Petersilie.ManagementTools.RegistryProvider
         /// <summary>
         /// <see cref="RegView.x86"/>
         /// </summary>
-        protected override RegView ViewFlag
+        internal protected override RegView ViewFlag
         {
             get {
                 return RegView.x86;
