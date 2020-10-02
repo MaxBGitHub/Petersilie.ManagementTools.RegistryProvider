@@ -42,11 +42,11 @@ namespace Petersilie.ManagementTools.RegistryProvider
         public static ManagementClass StdRegMgmtProvider(string machine)
         {
             var options = new ConnectionOptions() {
-                Impersonation        = ImpersonationLevel.Impersonate,
+                Impersonation       = ImpersonationLevel.Impersonate,
                 EnablePrivileges    = true
             };
 
-            var scope = new ManagementScope($"\\\\{machine}{NAMESPACE}", options);
+            var scope = new ManagementScope($"\\\\{machine}\\{NAMESPACE}", options);
             var path = new ManagementPath(PROVIDER);
 
             return new ManagementClass(scope, path, null);
@@ -61,13 +61,13 @@ namespace Petersilie.ManagementTools.RegistryProvider
             string userName, SecureString password)
         {
             var options = new ConnectionOptions() {
-                Impersonation        = ImpersonationLevel.Impersonate,
+                Impersonation       = ImpersonationLevel.Impersonate,
                 Username            = userName,
-                SecurePassword        = password,
+                SecurePassword      = password,
                 EnablePrivileges    = true
             };
 
-            var scope = new ManagementScope($"\\\\{machine}{NAMESPACE}", options);
+            var scope = new ManagementScope($"\\\\{machine}\\{NAMESPACE}", options);
             var path = new ManagementPath(PROVIDER);
 
             return new ManagementClass(scope, path, null);
